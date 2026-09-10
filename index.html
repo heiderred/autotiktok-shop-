@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoTikTok Shop - Sistema de Produção</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root {
+    --bg: #0f0f1a;
+    --card: #1a1a2e;
+    --card-hover: #252545;
+    --accent: #ff0050;
+    --accent-2: #00f2ea;
+    --text: #ffffff;
+    --text-dim: #a0a0b8;
+    --border: #2a2a45;
+    --success: #00d26a;
+    --warning: #ffb800;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .header h1 {
+    font-size: 24px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .badge {
+    background: var(--card);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .tab {
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+  }
+  .tab:hover { background: var(--card-hover); }
+  .tab.active {
+    background: linear-gradient(135deg, var(--accent), #ff3377);
+    color: white;
+    border-color: transparent;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  .stat-card .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .change { font-size: 12px; margin-top: 4px; }
+  .change.up { color: var(--success); }
+  .change.down { color: var(--accent); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    color: white;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #ff3377);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255,0,80,0.3); }
+  .btn-secondary {
+    background: var(--card-hover);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: #333355; }
+  .btn-success {
+    background: linear-gradient(135deg, var(--success), #00b894);
+  }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border 0.2s;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .grid-4 { grid-template-columns: 1fr 1fr; } }
+  .product-list { display: flex; flex-direction: column; gap: 12px; }
+  .product-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .product-item:hover { border-color: var(--accent); }
+  .product-info h4 { font-size: 14px; margin-bottom: 4px; }
+  .product-info .meta { font-size: 12px; color: var(--text-dim); }
+  .product-info .badge-comm {
+    display: inline-block;
+    background: rgba(0,242,234,0.15);
+    color: var(--accent-2);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    margin-left: 8px;
+  }
+  .product-actions { display: flex; gap: 8px; }
+  .script-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .script-card .script-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .script-card .script-title { font-weight: 600; font-size: 14px; }
+  .script-card .script-template { font-size: 11px; color: var(--text-dim); background: var(--card); padding: 2px 8px; border-radius: 6px; }
+  .script-part {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: var(--card);
+    border-left: 3px solid var(--accent);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .script-part .part-label { font-size: 10px; color: var(--accent); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+  .script-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag { background: var(--card); padding: 3px 10px; border-radius: 20px; font-size: 11px; color: var(--text-dim); border: 1px solid var(--border); }
+  .pipeline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .pipeline-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+  }
+  .pipeline-card .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .status-pendente { background: var(--warning); }
+  .status-producao { background: var(--accent-2); }
+  .status-pronto { background: var(--success); }
+  .status-postado { background: #666; }
+  .pipeline-progress {
+    display: flex;
+    gap: 4px;
+    margin: 12px 0;
+  }
+  .progress-step {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg);
+  }
+  .progress-step.done { background: var(--success); }
+  .progress-step.active { background: var(--accent-2); }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .calendar-day {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 100px;
+    font-size: 12px;
+  }
+  .calendar-day .day-num { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: var(--text-dim); }
+  .calendar-day .day-num.today { color: var(--accent); }
+  .calendar-event {
+    background: rgba(255,0,80,0.15);
+    border-left: 2px solid var(--accent);
+    padding: 4px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .calendar-event:hover { background: rgba(255,0,80,0.3); }
+  .calendar-event.prod { background: rgba(0,242,234,0.15); border-left-color: var(--accent-2); }
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checklist li.done { color: var(--text-dim); text-decoration: line-through; }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    animation: slideUp 0.3s;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .toast.show { display: flex; }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+  }
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
+  .export-area {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>AutoTikTok Shop</h1>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <span class="badge">v1.1</span>
+      <span class="badge" id="totalProdBadge">0 produtos</span>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabBar">
+    <div class="tab active" data-target="dashboard">Painel</div>
+    <div class="tab" data-target="produtos">Produtos</div>
+    <div class="tab" data-target="roteiros">Roteiros</div>
+    <div class="tab" data-target="pipeline">Produção</div>
+    <div class="tab" data-target="calendario">Calendário</div>
+    <div class="tab" data-target="checklist">Verificação</div>
+    <div class="tab" data-target="ferramentas">Ferramentas</div>
+    <div class="tab" data-target="exportar">Exportar</div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="dashboard" class="panel active">
+    <div class="grid-4">
+      <div class="stat-card">
+        <div class="label">Produtos Ativos</div>
+        <div class="value" id="dashProdutos">0</div>
+        <div class="change up">+3 esta semana</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Roteiros Gerados</div>
+        <div class="value" id="dashRoteiros">0</div>
+        <div class="change up">Prontos para gravar</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Vídeos em Produção</div>
+        <div class="value" id="dashProducao">0</div>
+        <div class="change" style="color:var(--accent-2)">Aguardando edição</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Postados Hoje</div>
+        <div class="value" id="dashPostados">0</div>
+        <div class="change up">Meta: 3-4/dia</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Próximo Passo</div>
+      <div id="proximoPasso">
+        <p style="color:var(--text-dim);margin-bottom:16px;">Adicione produtos do painel 3xapp.shop para começar a gerar roteiros automaticamente.</p>
+        <button class="btn btn-primary" id="btnDashAddProd">+ Adicionar Produto</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fluxo de Produção</div>
+      <div id="dashPipeline">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <p>Nenhum vídeo em produção ainda</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUTOS -->
+  <div id="produtos" class="panel">
+    <div class="card">
+      <div class="card-title">Adicionar Produto do Painel</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome do Produto</label>
+          <input type="text" id="pNome" placeholder="Ex: Guarda-Chuva Automático 10 Hastes">
+        </div>
+        <div class="form-group">
+          <label>Preço</label>
+          <input type="text" id="pPreco" placeholder="R$ 49,90">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Comissão (%)</label>
+          <input type="text" id="pComissao" placeholder="33%">
+        </div>
+        <div class="form-group">
+          <label>Qtd. Vendidos</label>
+          <input type="text" id="pVendidos" placeholder="21.400">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Avaliação</label>
+          <input type="text" id="pAvaliacao" placeholder="4.8">
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="pCategoria">
+            <option value="utilidades">Utilidades</option>
+            <option value="beleza">Beleza</option>
+            <option value="saude">Saúde</option>
+            <option value="moda">Moda</option>
+            <option value="eletronicos">Eletrônicos</option>
+            <option value="casa">Casa</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Benefícios (separados por vírgula)</label>
+        <input type="text" id="pBeneficios" placeholder="Abre sozinho, 10 hastes, Não quebra no vento">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Problema que Resolve</label>
+          <input type="text" id="pProblema" placeholder="Guarda-chuva vira do avesso na chuva forte">
+        </div>
+        <div class="form-group">
+          <label>Diferencial</label>
+          <input type="text" id="pDiferencial" placeholder="10 hastes de fibra de vidro">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btnAddProduto">Salvar Produto</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Produtos Cadastrados</div>
+      <div class="product-list" id="productList">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          <p>Nenhum produto cadastrado</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROTEIROS -->
+  <div id="roteiros" class="panel">
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;">
+        <span>Gerador de Roteiros</span>
+        <button class="btn btn-primary btn-sm" id="btnGerarTodos">Gerar Todos</button>
+      </div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Selecione os produtos e modelos para gerar roteiros prontos para gravação.</p>
+      <div id="roteiroControls">
+        <div class="form-group">
+          <label>Modelos a gerar</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+              <input type="checkbox" id="tProblema" checked> Problema → Solução → Prova
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+              <input type="checkbox" id="tAntes" checked> Antes vs Depois
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+              <input type="checkbox" id="tCuriosidade" checked> Curiosidade Chocante
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="scriptsContainer"></div>
+  </div>
+
+  <!-- PRODUÇÃO -->
+  <div id="pipeline" class="panel">
+    <div class="card">
+      <div class="card-title">Fluxo de Produção</div>
+      <div class="pipeline-grid" id="pipelineGrid">
+        <div class="empty-state" style="grid-column:1/-1;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <p>Gere roteiros primeiro para ver o fluxo de produção</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDÁRIO -->
+  <div id="calendario" class="panel">
+    <div class="card">
+      <div class="card-title">Calendário de Postagem</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <button class="btn btn-secondary btn-sm" id="btnMesAnt">&#9664;</button>
+        <span id="calMonth" style="font-weight:600;">Setembro 2026</span>
+        <button class="btn btn-secondary btn-sm" id="btnMesProx">&#9654;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px;text-align:center;font-size:11px;color:var(--text-dim);text-transform:uppercase;">
+        <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </div>
+
+  <!-- VERIFICAÇÃO -->
+  <div id="checklist" class="panel">
+    <div class="card">
+      <div class="card-title">Lista de Verificação do Próximo Vídeo</div>
+      <ul class="checklist" id="checklistUl">
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Escolher produto no painel 3xapp.shop (comissão +25%, concorrência baixa)</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Cadastrar produto neste sistema</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Gerar roteiro e escolher o melhor modelo</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Baixar imagens/vídeos do produto no TikTok Shop</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Gravar voz no ElevenLabs usando o roteiro gerado</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Editar no CapCut: imagens + voz + legendas + música</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Exportar em 9:16, 30 segundos, 1080p</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Criar thumbnail chamativa</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Postar no TikTok com link do produto</span></li>
+        <li><input type="checkbox" onchange="toggleCheck(this)"><span>Responder comentários nas primeiras 2 horas</span></li>
+      </ul>
+      <button class="btn btn-secondary" style="margin-top:12px;" id="btnResetCheck">Redefinir Lista</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Metas Diárias</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Vídeos para produzir hoje</label>
+          <input type="number" id="metaProduzir" value="2" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label>Vídeos para postar hoje</label>
+          <input type="number" id="metaPostar" value="3" min="1" max="10">
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+          <span>Progresso de hoje</span>
+          <span id="progressText">0/3 postados</span>
+        </div>
+        <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border);">
+          <div id="progressBar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width 0.3s;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- FERRAMENTAS -->
+  <div id="ferramentas" class="panel">
+    <div class="card">
+      <div class="card-title">Ferramentas Integradas</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Acesse suas ferramentas sem sair do sistema. Se alguma ferramenta não carregar aqui dentro (alguns sites bloqueiam a exibição em outras páginas), use o botão "Abrir em nova guia".</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn btn-primary btn-sm tool-btn" data-url="https://3xapp.shop" data-name="Painel 3xapp.shop">3xapp.shop</button>
+        <button class="btn btn-secondary btn-sm tool-btn" data-url="https://elevenlabs.io/app/speech-synthesis" data-name="ElevenLabs - Síntese de Voz">ElevenLabs</button>
+        <button class="btn btn-secondary btn-sm tool-btn" data-url="https://www.tiktok.com/tiktokstudio" data-name="TikTok Studio">TikTok Studio</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <span id="toolTitle" style="font-weight:600;font-size:14px;">Painel 3xapp.shop</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" id="btnRecarregarTool">Recarregar</button>
+          <button class="btn btn-secondary btn-sm" id="btnOpenExternal">Abrir em nova guia &#8599;</button>
+        </div>
+      </div>
+      <iframe id="toolFrame" src="https://3xapp.shop" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:12px;background:#fff;" allow="clipboard-read; clipboard-write; microphone; camera"></iframe>
+      <p style="color:var(--warning);font-size:12px;margin-top:8px;">Dica: você precisa estar logado(a) em cada serviço dentro do navegador para o conteúdo aparecer aqui.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Configurações Rápidas</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Estas informações ficam salvas apenas no seu navegador (localStorage) e servem para facilitar a produção.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Chave da API ElevenLabs (opcional)</label>
+          <input type="password" id="cfgElevenKey" placeholder="Cole sua API key aqui">
+        </div>
+        <div class="form-group">
+          <label>Voz padrão ElevenLabs</label>
+          <input type="text" id="cfgVoz" placeholder="Ex: Rachel, ou ID da voz pt-BR">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Link da sua loja TikTok Shop</label>
+          <input type="text" id="cfgLoja" placeholder="https://www.tiktok.com/@sualoja">
+        </div>
+        <div class="form-group">
+          <label>Horário padrão de postagem</label>
+          <input type="time" id="cfgHorario" value="18:00">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btnSalvarCfg">Salvar Configurações</button>
+      <span id="cfgSaved" style="font-size:12px;color:var(--success);margin-left:10px;display:none;">Configurações salvas!</span>
+    </div>
+  </div>
+
+  <!-- EXPORTAR -->
+  <div id="exportar" class="panel">
+    <div class="card">
+      <div class="card-title">Exportar Dados</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Copie os dados para fazer backup ou usar em outro dispositivo.</p>
+      <button class="btn btn-primary" id="btnExpJSON">Exportar JSON</button>
+      <button class="btn btn-secondary" style="margin-left:8px;" id="btnExpTXT">Exportar TXT (Roteiros)</button>
+      <button class="btn btn-secondary" style="margin-left:8px;" id="btnImpJSON">Importar JSON</button>
+      <textarea class="export-area" id="exportArea" placeholder="Dados exportados aparecerão aqui..."></textarea>
+    </div>
+    <div class="card">
+      <div class="card-title">Limpar Dados</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Cuidado: isso apaga TODOS os produtos e roteiros salvos.</p>
+      <button class="btn btn-secondary" style="background:rgba(255,0,80,0.2);color:var(--accent);" id="btnLimpar">Limpar Tudo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastIcon">OK</span>
+  <span id="toastMsg">Operação realizada!</span>
+</div>
+
+<script>
+(function() {
+  var produtos = [];
+  var roteiros = [];
+  var currentMonth = new Date().getMonth();
+  var currentYear = new Date().getFullYear();
+
+  try {
+    var p = localStorage.getItem('atk_produtos');
+    var r = localStorage.getItem('atk_roteiros');
+    if (p) produtos = JSON.parse(p);
+    if (r) roteiros = JSON.parse(r);
+  } catch(e) { console.log('Armazenamento vazio'); }
+
+  var TEMPLATES = {
+    problema_solucao: {
+      nome: "Problema → Solução → Prova",
+      gerar: function(p) {
+        return {
+          gancho: "Meu " + p.problema.split(' ').slice(0,3).join(' ') + "... Até eu descobrir isso.",
+          agitacao: "Sério, todo dia era a mesma coisa: " + p.problema + ".",
+          solucao: "Aí apareceu o " + p.nome + ". " + p.beneficios[0] + ", " + (p.beneficios[1] || p.beneficios[0]) + ".",
+          prova: p.vendidos + " pessoas já compraram. Nota " + p.avaliacao + " estrelas.",
+          cta: "Só " + p.preco + ", frete grátis. Link na bio, mas corre que acaba.",
+          legendas: ["NUNCA MAIS", p.beneficios[0].toUpperCase(), p.vendidos + " VENDIDOS", p.preco.toUpperCase()],
+          hashtags: ["#tiktokshop", "#" + p.categoria, "#compras", "#promocao"],
+          musica: "Música de suspense que vira hype nos 3s"
+        };
+      }
+    },
+    antes_depois: {
+      nome: "Antes vs Depois",
+      gerar: function(p) {
+        return {
+          gancho: "Antes eu sofria com " + p.problema + ". Agora uso " + p.nome + ".",
+          agitacao: p.problema + " era um pesadelo. Todos os dias.",
+          solucao: "Com " + p.nome + ": " + p.beneficios.join(', ') + ".",
+          prova: p.vendidos + " vendidos, " + p.avaliacao + " estrelas. As avaliações falam por si.",
+          cta: "Clique no link do vídeo. " + p.preco + " e ainda com frete grátis.",
+          legendas: ["ANTES X DEPOIS", p.beneficios[0].toUpperCase(), p.vendidos + " VENDAS", "LINK NA BIO"],
+          hashtags: ["#tiktokshop", "#" + p.categoria, "#antesedepois", "#viral"],
+          musica: "Música de transformação, estilo 'antes e depois'"
+        };
+      }
+    },
+    curiosidade: {
+      nome: "Curiosidade Chocante",
+      gerar: function(p) {
+        return {
+          gancho: "Você não vai acreditar no que " + p.nome + " faz.",
+          agitacao: "Ele tem " + p.diferencial + " que nenhum outro tem.",
+          solucao: p.beneficios[0] + ". E ainda " + (p.beneficios[1] || p.beneficios[0]) + ".",
+          prova: p.vendidos + " vendidos. As pessoas estão amando.",
+          cta: "Só " + p.preco + ". Corre que acaba rápido.",
+          legendas: ["INACREDITÁVEL", p.diferencial.toUpperCase(), p.vendidos + " VENDIDOS", p.preco.toUpperCase()],
+          hashtags: ["#tiktokshop", "#" + p.categoria, "#curiosidade", "#tendencia"],
+          musica: "Música misteriosa que vira motivacional"
+        };
+      }
+    }
+  };
+
+  function showToast(msg, icon) {
+    icon = icon || 'OK';
+    var t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    document.getElementById('toastIcon').textContent = icon;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 3000);
+  }
+
+  function switchTab(id, clickedTab) {
+    var panels = document.querySelectorAll('.panel');
+    for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    document.getElementById(id).classList.add('active');
+    if (clickedTab) {
+      clickedTab.classList.add('active');
+    } else {
+      var targetTab = document.querySelector('.tab[data-target="' + id + '"]');
+      if (targetTab) targetTab.classList.add('active');
+    }
+    if (id === 'dashboard') updateDashboard();
+    if (id === 'produtos') renderProdutos();
+    if (id === 'roteiros') renderRoteiros();
+    if (id === 'pipeline') renderPipeline();
+    if (id === 'calendario') renderCalendar();
+  }
+
+  var tabEls = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabEls.length; i++) {
+    tabEls[i].addEventListener('click', function() {
+      switchTab(this.getAttribute('data-target'), this);
+    });
+  }
+
+  function addProduto() {
+    var p = {
+      id: Date.now(),
+      nome: document.getElementById('pNome').value,
+      preco: document.getElementById('pPreco').value,
+      comissao: document.getElementById('pComissao').value,
+      vendidos: document.getElementById('pVendidos').value,
+      avaliacao: document.getElementById('pAvaliacao').value,
+      categoria: document.getElementById('pCategoria').value,
+      beneficios: document.getElementById('pBeneficios').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }),
+      problema: document.getElementById('pProblema').value,
+      diferencial: document.getElementById('pDiferencial').value,
+      data: new Date().toISOString()
+    };
+    if (!p.nome || !p.preco) { showToast('Preencha nome e preço!', '!!'); return; }
+    produtos.push(p);
+    try { localStorage.setItem('atk_produtos', JSON.stringify(produtos)); } catch(e) {}
+    showToast('Produto adicionado!');
+    var campos = ['pNome','pPreco','pComissao','pVendidos','pAvaliacao','pBeneficios','pProblema','pDiferencial'];
+    for (var i = 0; i < campos.length; i++) document.getElementById(campos[i]).value = '';
+    renderProdutos();
+    // ===== FERRAMENTAS INTEGRADAS =====
+  var currentToolUrl = 'https://3xapp.shop';
+  var toolFrame = document.getElementById('toolFrame');
+  var toolBtns = document.querySelectorAll('.tool-btn');
+  for (var i = 0; i < toolBtns.length; i++) {
+    toolBtns[i].addEventListener('click', function() {
+      currentToolUrl = this.getAttribute('data-url');
+      document.getElementById('toolTitle').textContent = this.getAttribute('data-name');
+      for (var j = 0; j < toolBtns.length; j++) {
+        toolBtns[j].classList.remove('btn-primary');
+        toolBtns[j].classList.add('btn-secondary');
+      }
+      this.classList.remove('btn-secondary');
+      this.classList.add('btn-primary');
+      toolFrame.src = currentToolUrl;
+    });
+  }
+  document.getElementById('btnOpenExternal').addEventListener('click', function() {
+    window.open(currentToolUrl, '_blank');
+  });
+  document.getElementById('btnRecarregarTool').addEventListener('click', function() {
+    toolFrame.src = currentToolUrl;
+    showToast('Ferramenta recarregada!');
+  });
+
+  // ===== CONFIGURAÇÕES RÁPIDAS =====
+  function carregarConfig() {
+    try {
+      var cfg = JSON.parse(localStorage.getItem('atk_config') || '{}');
+      if (cfg.elevenKey) document.getElementById('cfgElevenKey').value = cfg.elevenKey;
+      if (cfg.voz) document.getElementById('cfgVoz').value = cfg.voz;
+      if (cfg.loja) document.getElementById('cfgLoja').value = cfg.loja;
+      if (cfg.horario) document.getElementById('cfgHorario').value = cfg.horario;
+    } catch(e) {}
+  }
+
+  document.getElementById('btnSalvarCfg').addEventListener('click', function() {
+    var cfg = {
+      elevenKey: document.getElementById('cfgElevenKey').value.trim(),
+      voz: document.getElementById('cfgVoz').value.trim(),
+      loja: document.getElementById('cfgLoja').value.trim(),
+      horario: document.getElementById('cfgHorario').value
+    };
+    try { localStorage.setItem('atk_config', JSON.stringify(cfg)); } catch(e) {}
+    var ok = document.getElementById('cfgSaved');
+    ok.style.display = 'inline';
+    setTimeout(function() { ok.style.display = 'none'; }, 2500);
+    showToast('Configurações salvas!');
+  });
+  carregarConfig();
+
+  updateDashboard();
+  }
+
+  document.getElementById('btnAddProduto').addEventListener('click', addProduto);
+  document.getElementById('btnDashAddProd').addEventListener('click', function() { switchTab('produtos'); });
+
+  function removeProduto(id) {
+    produtos = produtos.filter(function(p) { return p.id !== id; });
+    try { localStorage.setItem('atk_produtos', JSON.stringify(produtos)); } catch(e) {}
+    renderProdutos();
+    updateDashboard();
+    showToast('Produto removido', 'XX');
+  }
+
+  function renderProdutos() {
+    var list = document.getElementById('productList');
+    if (!produtos.length) {
+      list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Nenhum produto cadastrado</p></div>';
+      return;
+    }
+    list.innerHTML = produtos.map(function(p) {
+      return '<div class="product-item">' +
+        '<div class="product-info">' +
+          '<h4>' + escapeHtml(p.nome) + ' <span class="badge-comm">' + escapeHtml(p.comissao) + ' comissão</span></h4>' +
+          '<div class="meta">' + escapeHtml(p.preco) + ' &bull; ' + escapeHtml(p.vendidos) + ' vendidos &bull; &#9733; ' + escapeHtml(p.avaliacao) + ' &bull; ' + escapeHtml(p.categoria) + '</div>' +
+        '</div>' +
+        '<div class="product-actions">' +
+          '<button class="btn btn-secondary btn-sm btn-gerar-roteiro" data-id="' + p.id + '">Roteiro</button>' +
+          '<button class="btn btn-secondary btn-sm btn-remover-prod" data-id="' + p.id + '" style="color:var(--accent)">X</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var btnsRoteiro = list.querySelectorAll('.btn-gerar-roteiro');
+    for (var i = 0; i < btnsRoteiro.length; i++) {
+      btnsRoteiro[i].addEventListener('click', function() {
+        gerarRoteiroProd(parseInt(this.getAttribute('data-id')));
+      });
+    }
+    var btnsRemover = list.querySelectorAll('.btn-remover-prod');
+    for (var i = 0; i < btnsRemover.length; i++) {
+      btnsRemover[i].addEventListener('click', function() {
+        removeProduto(parseInt(this.getAttribute('data-id')));
+      });
+    }
+  }
+
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function gerarRoteiroProd(pid) {
+    var p = produtos.find(function(x) { return x.id === pid; });
+    if (!p) return;
+    var templates = [];
+    if (document.getElementById('tProblema').checked) templates.push('problema_solucao');
+    if (document.getElementById('tAntes').checked) templates.push('antes_depois');
+    if (document.getElementById('tCuriosidade').checked) templates.push('curiosidade');
+    for (var i = 0; i < templates.length; i++) {
+      var tkey = templates[i];
+      var t = TEMPLATES[tkey];
+      var r = t.gerar(p);
+      roteiros.push({
+        id: Date.now() + Math.random(),
+        produtoId: p.id,
+        produtoNome: p.nome,
+        template: t.nome,
+        templateKey: tkey,
+        roteiro: r,
+        data: new Date().toISOString(),
+        status: 'AGUARDANDO_PRODUÇÃO'
+      });
+    }
+    try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {}
+    showToast(templates.length + ' roteiro(s) gerado(s) para ' + p.nome);
+    renderRoteiros();
+    updateDashboard();
+  }
+
+  function gerarTodosRoteiros() {
+    if (!produtos.length) { showToast('Cadastre produtos primeiro!', '!!'); return; }
+    for (var i = 0; i < produtos.length; i++) gerarRoteiroProd(produtos[i].id);
+    showToast('Roteiros gerados para ' + produtos.length + ' produtos!');
+  }
+
+  document.getElementById('btnGerarTodos').addEventListener('click', gerarTodosRoteiros);
+
+  function renderRoteiros() {
+    var container = document.getElementById('scriptsContainer');
+    if (!roteiros.length) {
+      container.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><p>Nenhum roteiro gerado ainda. Adicione produtos e clique em "Gerar Todos".</p></div>';
+      return;
+    }
+    container.innerHTML = roteiros.map(function(r, i) {
+      return '<div class="script-card">' +
+        '<button class="copy-btn btn-copy-script" data-idx="' + i + '">Copiar</button>' +
+        '<div class="script-header">' +
+          '<span class="script-title">' + escapeHtml(r.produtoNome) + '</span>' +
+          '<span class="script-template">' + escapeHtml(r.template) + '</span>' +
+        '</div>' +
+        '<div class="script-part"><div class="part-label">Gancho (0-3s)</div>' + escapeHtml(r.roteiro.gancho) + '</div>' +
+        '<div class="script-part"><div class="part-label">Agitação (3-8s)</div>' + escapeHtml(r.roteiro.agitacao) + '</div>' +
+        '<div class="script-part"><div class="part-label">Solução (8-18s)</div>' + escapeHtml(r.roteiro.solucao) + '</div>' +
+        '<div class="script-part"><div class="part-label">Prova (18-23s)</div>' + escapeHtml(r.roteiro.prova) + '</div>' +
+        '<div class="script-part"><div class="part-label">CTA (23-30s)</div>' + escapeHtml(r.roteiro.cta) + '</div>' +
+        '<div class="script-tags">' +
+          r.roteiro.legendas.map(function(l) { return '<span class="tag">' + escapeHtml(l) + '</span>'; }).join('') +
+          r.roteiro.hashtags.map(function(h) { return '<span class="tag" style="color:var(--accent-2);border-color:var(--accent-2)">' + escapeHtml(h) + '</span>'; }).join('') +
+        '</div>' +
+        '<div style="margin-top:10px;font-size:11px;color:var(--text-dim)">&#9835; ' + escapeHtml(r.roteiro.musica) + '</div>' +
+      '</div>';
+    }).join('');
+
+    var btnsCopy = container.querySelectorAll('.btn-copy-script');
+    for (var i = 0; i < btnsCopy.length; i++) {
+      btnsCopy[i].addEventListener('click', function() {
+        copyScript(parseInt(this.getAttribute('data-idx')));
+      });
+    }
+  }
+
+  function copyScript(idx) {
+    var r = roteiros[idx];
+    if (!r) return;
+    var lines = [
+      'ROTEIRO: ' + r.produtoNome,
+      'Modelo: ' + r.template,
+      '',
+      'GANCHO: ' + r.roteiro.gancho,
+      'AGITAÇÃO: ' + r.roteiro.agitacao,
+      'SOLUÇÃO: ' + r.roteiro.solucao,
+      'PROVA: ' + r.roteiro.prova,
+      'CTA: ' + r.roteiro.cta,
+      '',
+      'Legendas: ' + r.roteiro.legendas.join(' | '),
+      'Hashtags: ' + r.roteiro.hashtags.join(' ')
+    ];
+    var text = lines.join('\n');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() { showToast('Roteiro copiado!'); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Roteiro copiado!');
+    }
+  }
+
+  function renderPipeline() {
+    var grid = document.getElementById('pipelineGrid');
+    if (!roteiros.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><p>Gere roteiros primeiro para ver o fluxo de produção</p></div>';
+      return;
+    }
+    var steps = ['Roteiro','Assets','Voz','Edição','Thumb','Postado'];
+    grid.innerHTML = roteiros.slice(0, 6).map(function(r, i) {
+      var progress = Math.floor(Math.random() * 4);
+      return '<div class="pipeline-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<span style="font-weight:600;font-size:14px;">' + escapeHtml(r.produtoNome.substring(0,25)) + '</span>' +
+          '<span style="font-size:11px;"><span class="status-dot ' + (progress < 2 ? 'status-pendente' : progress < 5 ? 'status-producao' : 'status-pronto') + '"></span>' + (progress < 2 ? 'Pendente' : progress < 5 ? 'Em produção' : 'Pronto') + '</span>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">' + escapeHtml(r.template) + '</div>' +
+        '<div class="pipeline-progress">' +
+          steps.map(function(s, j) { return '<div class="progress-step ' + (j < progress ? 'done' : j === progress ? 'active' : '') + '" title="' + s + '"></div>'; }).join('') +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px;">' +
+          '<span>' + (steps[progress] || 'Concluído') + '</span>' +
+          '<span>' + progress + '/6</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function changeMonth(dir) {
+    currentMonth += dir;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  }
+
+  document.getElementById('btnMesAnt').addEventListener('click', function() { changeMonth(-1); });
+  document.getElementById('btnMesProx').addEventListener('click', function() { changeMonth(1); });
+
+  function renderCalendar() {
+    var meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    document.getElementById('calMonth').textContent = meses[currentMonth] + ' ' + currentYear;
+    var grid = document.getElementById('calendarGrid');
+    var firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    var daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    var today = new Date();
+    var isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+    var html = '';
+    for (var i = 0; i < firstDay; i++) html += '<div class="calendar-day" style="opacity:0.3;"></div>';
+    for (var d = 1; d <= daysInMonth; d++) {
+      var isToday = isCurrentMonth && d === today.getDate();
+      var events = [];
+      if (roteiros.length > 0) {
+        var idx = (d + currentMonth) % roteiros.length;
+        var r = roteiros[idx];
+        if (r && d % 2 === 0) events.push({text: r.produtoNome.substring(0,18), type: 'post'});
+        if (r && d % 3 === 0) events.push({text: 'Produzir', type: 'prod'});
+      }
+      html += '<div class="calendar-day">' +
+        '<div class="day-num ' + (isToday ? 'today' : '') + '">' + d + (isToday ? ' &bull; Hoje' : '') + '</div>' +
+        events.map(function(e) { return '<div class="calendar-event ' + e.type + '">' + escapeHtml(e.text) + '</div>'; }).join('') +
+      '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function toggleCheck(cb) {
+    cb.parentElement.classList.toggle('done', cb.checked);
+    updateProgress();
+  }
+
+  function resetChecklist() {
+    var cbs = document.querySelectorAll('.checklist input');
+    for (var i = 0; i < cbs.length; i++) { cbs[i].checked = false; cbs[i].parentElement.classList.remove('done'); }
+    updateProgress();
+    showToast('Lista de verificação redefinida!');
+  }
+
+  document.getElementById('btnResetCheck').addEventListener('click', resetChecklist);
+
+  function updateProgress() {
+    var total = document.querySelectorAll('.checklist input').length;
+    var checked = document.querySelectorAll('.checklist input:checked').length;
+    var pct = total ? (checked / total * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = checked + '/' + total + ' concluídos';
+  }
+
+  function updateDashboard() {
+    document.getElementById('dashProdutos').textContent = produtos.length;
+    document.getElementById('dashRoteiros').textContent = roteiros.length;
+    document.getElementById('dashProducao').textContent = roteiros.filter(function(r) { return r.status === 'AGUARDANDO_PRODUÇÃO'; }).length;
+    document.getElementById('totalProdBadge').textContent = produtos.length + ' produtos';
+    var proximo = document.getElementById('proximoPasso');
+    if (!produtos.length) {
+      proximo.innerHTML = '<p style="color:var(--text-dim);margin-bottom:16px;">Adicione produtos do painel 3xapp.shop para começar.</p><button class="btn btn-primary" id="btnDashAddProd2">+ Adicionar Produto</button>';
+      document.getElementById('btnDashAddProd2').addEventListener('click', function() { switchTab('produtos'); });
+    } else if (!roteiros.length) {
+      proximo.innerHTML = '<p style="color:var(--text-dim);margin-bottom:16px;">Produtos cadastrados! Agora gere os roteiros.</p><button class="btn btn-primary" id="btnDashGerar2">Gerar Roteiros</button>';
+      document.getElementById('btnDashGerar2').addEventListener('click', function() { switchTab('roteiros'); });
+    } else {
+      var r = roteiros[0];
+      proximo.innerHTML = '<div style="background:var(--bg);padding:16px;border-radius:12px;margin-bottom:12px;">' +
+        '<div style="font-size:12px;color:var(--text-dim);margin-bottom:4px;">PRÓXIMO VÍDEO A PRODUZIR</div>' +
+        '<div style="font-weight:600;margin-bottom:4px;">' + escapeHtml(r.produtoNome) + '</div>' +
+        '<div style="font-size:13px;color:var(--text-dim);">' + escapeHtml(r.template) + ' &bull; ' + escapeHtml(r.roteiro.gancho.substring(0,60)) + '...</div>' +
+      '</div>' +
+      '<button class="btn btn-primary" id="btnDashCheck">Iniciar Produção</button>' +
+      '<button class="btn btn-secondary" style="margin-left:8px;" id="btnDashVer">Ver Todos</button>';
+      document.getElementById('btnDashCheck').addEventListener('click', function() { switchTab('checklist'); });
+      document.getElementById('btnDashVer').addEventListener('click', function() { switchTab('roteiros'); });
+    }
+    var dashPipe = document.getElementById('dashPipeline');
+    if (roteiros.length) {
+      dashPipe.innerHTML = roteiros.slice(0, 3).map(function(r) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">' +
+          '<div>' +
+            '<div style="font-weight:500;font-size:14px;">' + escapeHtml(r.produtoNome) + '</div>' +
+            '<div style="font-size:12px;color:var(--text-dim);">' + escapeHtml(r.template) + '</div>' +
+          '</div>' +
+          '<span class="badge" style="font-size:11px;">' + r.status.replace(/_/g, ' ') + '</span>' +
+        '</div>';
+      }).join('');
+    } else {
+      dashPipe.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><p>Nenhum vídeo em produção ainda</p></div>';
+    }
+  }
+
+  function exportarJSON() {
+    var dados = { produtos: produtos, roteiros: roteiros, exportado: new Date().toISOString() };
+    var json = JSON.stringify(dados, null, 2);
+    document.getElementById('exportArea').value = json;
+    showToast('JSON exportado para a área de texto!');
+  }
+
+  function exportarTXT() {
+    var txt = '';
+    for (var i = 0; i < roteiros.length; i++) {
+      var r = roteiros[i];
+      var lines = [
+        '',
+        '='.repeat(60),
+        'PRODUTO: ' + r.produtoNome,
+        'Modelo: ' + r.template,
+        '='.repeat(60),
+        '',
+        'GANCHO: ' + r.roteiro.gancho,
+        '',
+        'AGITAÇÃO: ' + r.roteiro.agitacao,
+        '',
+        'SOLUÇÃO: ' + r.roteiro.solucao,
+        '',
+        'PROVA: ' + r.roteiro.prova,
+        '',
+        'CTA: ' + r.roteiro.cta,
+        '',
+        'Legendas: ' + r.roteiro.legendas.join(' | '),
+        'Hashtags: ' + r.roteiro.hashtags.join(' '),
+        'Música: ' + r.roteiro.musica,
+        ''
+      ];
+      txt += lines.join('\n');
+    }
+    document.getElementById('exportArea').value = txt;
+    showToast('TXT exportado! Copie e salve.');
+  }
+
+  function importarJSON() {
+    var texto = document.getElementById('exportArea').value.trim();
+    if (!texto) { showToast('Cole o JSON na área de texto primeiro!', '!!'); return; }
+    try {
+      var dados = JSON.parse(texto);
+      if (dados.produtos) { produtos = dados.produtos; try { localStorage.setItem('atk_produtos', JSON.stringify(produtos)); } catch(e) {} }
+      if (dados.roteiros) { roteiros = dados.roteiros; try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {} }
+      showToast('Dados importados com sucesso!');
+      updateDashboard();
+      renderProdutos();
+      renderRoteiros();
+    } catch(e) {
+      showToast('JSON inválido! Verifique o formato.', '!!');
+    }
+  }
+
+  function limparTudo() {
+    if (!confirm('Tem certeza? Todos os produtos e roteiros serão apagados.')) return;
+    produtos = []; roteiros = [];
+    try {
+      localStorage.removeItem('atk_produtos');
+      localStorage.removeItem('atk_roteiros');
+    } catch(e) {}
+    updateDashboard();
+    renderProdutos();
+    renderRoteiros();
+    showToast('Todos os dados foram apagados.');
+  }
+
+  document.getElementById('btnExpJSON').addEventListener('click', exportarJSON);
+  document.getElementById('btnExpTXT').addEventListener('click', exportarTXT);
+  document.getElementById('btnImpJSON').addEventListener('click', importarJSON);
+  document.getElementById('btnLimpar').addEventListener('click', limparTudo);
+
+  updateDashboard();
+  renderProdutos();
+  renderCalendar();
+  updateProgress();
+})();
+</script>
+
+</body>
+</html>
