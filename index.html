@@ -340,7 +340,7 @@
   <div class="header">
     <h1>AutoTikTok Shop</h1>
     <div style="display:flex;gap:10px;align-items:center;">
-      <span class="badge">v1.3</span>
+      <span class="badge">v1.4</span>
       <span class="badge" id="totalProdBadge">0 produtos</span>
     </div>
   </div>
@@ -811,6 +811,27 @@
   });
   carregarConfig();
 
+  function salvarMetas() {
+    try {
+      localStorage.setItem('atk_metas', JSON.stringify({
+        produzir: document.getElementById('metaProduzir').value,
+        postar: document.getElementById('metaPostar').value
+      }));
+    } catch(e) {}
+  }
+  function carregarMetas() {
+    try {
+      var m = JSON.parse(localStorage.getItem('atk_metas') || 'null');
+      if (!m) return;
+      if (m.produzir) document.getElementById('metaProduzir').value = m.produzir;
+      if (m.postar) document.getElementById('metaPostar').value = m.postar;
+    } catch(e) {}
+  }
+  document.getElementById('metaProduzir').addEventListener('change', salvarMetas);
+  document.getElementById('metaPostar').addEventListener('change', salvarMetas);
+  carregarMetas();
+  carregarChecklist();
+
   updateDashboard();
   }
 
@@ -1067,12 +1088,33 @@
 
   function toggleCheck(cb) {
     cb.parentElement.classList.toggle('done', cb.checked);
+    salvarChecklist();
     updateProgress();
+  }
+
+  function salvarChecklist() {
+    var estado = [];
+    var cbs = document.querySelectorAll('.checklist input');
+    for (var i = 0; i < cbs.length; i++) estado.push(!!cbs[i].checked);
+    try { localStorage.setItem('atk_checklist', JSON.stringify(estado)); } catch(e) {}
+  }
+
+  function carregarChecklist() {
+    try {
+      var estado = JSON.parse(localStorage.getItem('atk_checklist') || 'null');
+      if (!estado) return;
+      var cbs = document.querySelectorAll('.checklist input');
+      for (var i = 0; i < cbs.length && i < estado.length; i++) {
+        cbs[i].checked = estado[i];
+        cbs[i].parentElement.classList.toggle('done', estado[i]);
+      }
+    } catch(e) {}
   }
 
   function resetChecklist() {
     var cbs = document.querySelectorAll('.checklist input');
     for (var i = 0; i < cbs.length; i++) { cbs[i].checked = false; cbs[i].parentElement.classList.remove('done'); }
+    try { localStorage.removeItem('atk_checklist'); } catch(e) {}
     updateProgress();
     showToast('Lista de verificação redefinida!');
   }
@@ -1080,8 +1122,10 @@
   document.getElementById('btnResetCheck').addEventListener('click', resetChecklist);
 
   function updateProgress() {
-    var total = document.querySelectorAll('.checklist input').length;
-    var checked = document.querySelectorAll('.checklist input:checked').length;
+    var cbs = document.querySelectorAll('.checklist input');
+    var total = cbs.length;
+    var checked = 0;
+    for (var i = 0; i < cbs.length; i++) { if (cbs[i].checked) checked++; }
     var pct = total ? (checked / total * 100) : 0;
     document.getElementById('progressBar').style.width = pct + '%';
     document.getElementById('progressText').textContent = checked + '/' + total + ' concluídos';
