@@ -340,7 +340,7 @@
   <div class="header">
     <h1>AutoTikTok Shop</h1>
     <div style="display:flex;gap:10px;align-items:center;">
-      <span class="badge">v1.6</span>
+      <span class="badge">v1.8</span>
       <span class="badge" id="totalProdBadge">0 produtos</span>
     </div>
   </div>
@@ -601,9 +601,20 @@
     <div class="card">
       <div class="card-title">&#127908; Gerador de Voz (ElevenLabs)</div>
       <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Gere a locução do roteiro aqui mesmo, sem abrir o ElevenLabs. Precisa da <strong>API key</strong> salva nas Configurações Rápidas abaixo.</p>
+      <div class="form-group" id="roteiroSelectWrap" style="display:none;">
+        <label>Usar roteiro salvo (opcional)</label>
+        <select id="ttsRoteiroSelect"></select>
+      </div>
       <div class="form-group">
         <label>Texto do roteiro</label>
         <textarea id="ttsTexto" placeholder="Cole aqui o roteiro copiado (aba Roteiros)..." style="min-height:120px;"></textarea>
+      </div>
+      <div class="form-group" id="vozSelectWrap" style="display:none;">
+        <label>Suas vozes (escolha aqui)</label>
+        <select id="ttsVozSelect" onchange="document.getElementById('ttsVoz').value = this.value;"></select>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-secondary btn-sm" id="btnCarregarVozes">&#128260; Carregar minhas vozes</button>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -765,6 +776,7 @@
     if (id === 'roteiros') renderRoteiros();
     if (id === 'pipeline') renderPipeline();
     if (id === 'calendario') renderCalendar();
+    if (id === 'ferramentas') preencherRoteirosTTS();
   }
 
   var tabEls = document.querySelectorAll('.tab');
@@ -825,6 +837,69 @@
   });
 
   // ===== GERADOR DE VOZ ELEVENLABS =====
+  function preencherRoteirosTTS() {
+    var sel = document.getElementById('ttsRoteiroSelect');
+    if (!sel) return;
+    if (!roteiros.length) { document.getElementById('roteiroSelectWrap').style.display = 'none'; return; }
+    sel.innerHTML = '<option value="">-- Escolha um roteiro --</option>';
+    for (var i = 0; i < roteiros.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = roteiros[i].produtoNome + ' - ' + roteiros[i].template;
+      sel.appendChild(opt);
+    }
+    document.getElementById('roteiroSelectWrap').style.display = 'block';
+  }
+  document.getElementById('ttsRoteiroSelect').addEventListener('change', function() {
+    if (this.value === '') return;
+    var r = roteiros[parseInt(this.value)];
+    if (!r) return;
+    var partes = [r.roteiro.gancho, r.roteiro.agitacao, r.roteiro.solucao, r.roteiro.prova, r.roteiro.cta];
+    document.getElementById('ttsTexto').value = partes.join(' ... ');
+    showToast('Roteiro carregado no Gerador de Voz!');
+  });
+  preencherRoteirosTTS();
+
+  document.getElementById('btnCarregarVozes').addEventListener('click', function() {
+    var cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem('atk_config') || '{}'); } catch(e) {}
+    var key = cfg.elevenKey;
+    var erro = document.getElementById('ttsErro');
+    erro.style.display = 'none';
+    if (!key) { erro.textContent = 'Salve sua API key nas Configurações Rápidas primeiro.'; erro.style.display = 'block'; return; }
+    var btn = this;
+    btn.textContent = 'Carregando...';
+    btn.disabled = true;
+    fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } })
+      .then(function(res) { if (!res.ok) throw new Error('Erro ' + res.status); return res.json(); })
+      .then(function(dados) {
+        var sel = document.getElementById('ttsVozSelect');
+        sel.innerHTML = '';
+        var vozes = (dados.voices || []).slice();
+        vozes.sort(function(a, b) { return a.name.localeCompare(b.name); });
+        for (var i = 0; i < vozes.length; i++) {
+          var opt = document.createElement('option');
+          opt.value = vozes[i].voice_id;
+          opt.textContent = vozes[i].name + (vozes[i].category ? ' (' + vozes[i].category + ')' : '');
+          sel.appendChild(opt);
+        }
+        document.getElementById('vozSelectWrap').style.display = 'block';
+        if (vozes.length) {
+          sel.value = vozes[0].voice_id;
+          document.getElementById('ttsVoz').value = vozes[0].voice_id;
+        }
+        showToast(vozes.length + ' voz(es) carregada(s)!');
+      })
+      .catch(function(e) {
+        erro.textContent = 'Falha ao carregar vozes: ' + e.message;
+        erro.style.display = 'block';
+      })
+      .finally(function() {
+        btn.innerHTML = '&#128260; Carregar minhas vozes';
+        btn.disabled = false;
+      });
+  });
+
   document.getElementById('btnGerarVoz').addEventListener('click', function() {
     var cfg = {};
     try { cfg = JSON.parse(localStorage.getItem('atk_config') || '{}'); } catch(e) {}
