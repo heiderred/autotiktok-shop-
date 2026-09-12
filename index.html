@@ -340,7 +340,7 @@
   <div class="header">
     <h1>AutoTikTok Shop</h1>
     <div style="display:flex;gap:10px;align-items:center;">
-      <span class="badge">v1.4</span>
+      <span class="badge">v1.5</span>
       <span class="badge" id="totalProdBadge">0 produtos</span>
     </div>
   </div>
@@ -661,7 +661,7 @@
       nome: "Problema → Solução → Prova",
       gerar: function(p) {
         return {
-          gancho: "Meu " + p.problema.split(' ').slice(0,3).join(' ') + "... Até eu descobrir isso.",
+          gancho: "Você também sofre com " + p.problema + "? Até eu descobrir isso.",
           agitacao: "Sério, todo dia era a mesma coisa: " + p.problema + ".",
           solucao: "Aí apareceu o " + p.nome + ". " + p.beneficios[0] + ", " + (p.beneficios[1] || p.beneficios[0]) + ".",
           prova: p.vendidos + " pessoas já compraram. Nota " + p.avaliacao + " estrelas.",
@@ -742,15 +742,15 @@
   function addProduto() {
     var p = {
       id: Date.now(),
-      nome: document.getElementById('pNome').value,
-      preco: document.getElementById('pPreco').value,
-      comissao: document.getElementById('pComissao').value,
-      vendidos: document.getElementById('pVendidos').value,
-      avaliacao: document.getElementById('pAvaliacao').value,
+      nome: document.getElementById('pNome').value.trim(),
+      preco: document.getElementById('pPreco').value.trim(),
+      comissao: document.getElementById('pComissao').value.trim(),
+      vendidos: document.getElementById('pVendidos').value.trim(),
+      avaliacao: document.getElementById('pAvaliacao').value.trim(),
       categoria: document.getElementById('pCategoria').value,
       beneficios: document.getElementById('pBeneficios').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }),
-      problema: document.getElementById('pProblema').value,
-      diferencial: document.getElementById('pDiferencial').value,
+      problema: document.getElementById('pProblema').value.trim(),
+      diferencial: document.getElementById('pDiferencial').value.trim(),
       data: new Date().toISOString()
     };
     if (!p.nome || !p.preco) { showToast('Preencha nome e preço!', '!!'); return; }
@@ -907,7 +907,8 @@
         templateKey: tkey,
         roteiro: r,
         data: new Date().toISOString(),
-        status: 'AGUARDANDO_PRODUÇÃO'
+        status: 'AGUARDANDO_PRODUÇÃO',
+        progress: 1
       });
     }
     try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {}
@@ -1031,22 +1032,49 @@
     }
     var steps = ['Roteiro','Assets','Voz','Edição','Thumb','Postado'];
     grid.innerHTML = roteiros.slice(0, 6).map(function(r, i) {
-      var progress = Math.floor(Math.random() * 4);
+      var progress = (typeof r.progress === 'number') ? r.progress : 1;
+      if (progress > 6) progress = 6;
+      var concluido = progress >= 6;
+      var statusLabel = concluido ? 'Postado' : (progress < 3 ? 'Pendente' : 'Em produção');
+      var dotClass = concluido ? 'status-postado' : (progress < 3 ? 'status-pendente' : 'status-producao');
       return '<div class="pipeline-card">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
           '<span style="font-weight:600;font-size:14px;">' + escapeHtml(r.produtoNome.substring(0,25)) + '</span>' +
-          '<span style="font-size:11px;"><span class="status-dot ' + (progress < 2 ? 'status-pendente' : progress < 5 ? 'status-producao' : 'status-pronto') + '"></span>' + (progress < 2 ? 'Pendente' : progress < 5 ? 'Em produção' : 'Pronto') + '</span>' +
+          '<span style="font-size:11px;"><span class="status-dot ' + dotClass + '"></span>' + statusLabel + '</span>' +
         '</div>' +
         '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">' + escapeHtml(r.template) + '</div>' +
         '<div class="pipeline-progress">' +
-          steps.map(function(s, j) { return '<div class="progress-step ' + (j < progress ? 'done' : j === progress ? 'active' : '') + '" title="' + s + '"></div>'; }).join('') +
+          steps.map(function(s, j) { return '<div class="progress-step ' + (j < progress ? 'done' : (j === progress && !concluido) ? 'active' : '') + '" title="' + s + '"></div>'; }).join('') +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-top:4px;">' +
-          '<span>' + (steps[progress] || 'Concluído') + '</span>' +
+          '<span>' + (concluido ? 'Concluído' : steps[progress]) + '</span>' +
           '<span>' + progress + '/6</span>' +
         '</div>' +
+        '<button class="btn btn-secondary btn-sm btn-avancar" data-id="' + r.id + '" style="margin-top:12px;width:100%;justify-content:center;' + (concluido ? 'opacity:0.5;' : '') + '">' + (concluido ? 'Concluído ✓' : 'Avançar etapa →') + '</button>' +
       '</div>';
     }).join('');
+    var btnsAv = grid.querySelectorAll('.btn-avancar');
+    for (var i = 0; i < btnsAv.length; i++) {
+      btnsAv[i].addEventListener('click', function() {
+        avancarEtapa(this.getAttribute('data-id'));
+      });
+    }
+  }
+
+  function avancarEtapa(id) {
+    var r = null;
+    for (var i = 0; i < roteiros.length; i++) { if (String(roteiros[i].id) === String(id)) { r = roteiros[i]; break; } }
+    if (!r) return;
+    if (typeof r.progress !== 'number') r.progress = 1;
+    if (r.progress < 6) {
+      r.progress++;
+      var labels = ['Roteiro','Assets','Voz','Edição','Thumb','Postado'];
+      if (r.progress >= 6) { r.status = 'POSTADO'; showToast('Vídeo postado! 🎉'); }
+      else { showToast('Etapa concluída: ' + labels[r.progress - 1] + ' ✓'); }
+      try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {}
+    }
+    renderPipeline();
+    updateDashboard();
   }
 
   function changeMonth(dir) {
@@ -1072,11 +1100,11 @@
     for (var d = 1; d <= daysInMonth; d++) {
       var isToday = isCurrentMonth && d === today.getDate();
       var events = [];
-      if (roteiros.length > 0) {
-        var idx = (d + currentMonth) % roteiros.length;
-        var r = roteiros[idx];
-        if (r && d % 2 === 0) events.push({text: r.produtoNome.substring(0,18), type: 'post'});
-        if (r && d % 3 === 0) events.push({text: 'Produzir', type: 'prod'});
+      for (var ri = 0; ri < roteiros.length; ri++) {
+        var postDay = 2 + ((ri * 2) % Math.max(daysInMonth - 2, 1));
+        var prodDay = postDay > 1 ? postDay - 1 : 1;
+        if (d === prodDay) events.push({text: 'Produzir: ' + roteiros[ri].produtoNome.substring(0,12), type: 'prod'});
+        if (d === postDay) events.push({text: roteiros[ri].produtoNome.substring(0,18), type: 'post'});
       }
       html += '<div class="calendar-day">' +
         '<div class="day-num ' + (isToday ? 'today' : '') + '">' + d + (isToday ? ' &bull; Hoje' : '') + '</div>' +
@@ -1136,6 +1164,9 @@
     document.getElementById('dashRoteiros').textContent = roteiros.length;
     document.getElementById('dashProducao').textContent = roteiros.filter(function(r) { return r.status === 'AGUARDANDO_PRODUÇÃO'; }).length;
     document.getElementById('totalProdBadge').textContent = produtos.length + ' produtos';
+    var postados = 0;
+    for (var i = 0; i < roteiros.length; i++) { if ((roteiros[i].progress || 0) >= 6) postados++; }
+    document.getElementById('dashPostados').textContent = postados;
     var proximo = document.getElementById('proximoPasso');
     if (!produtos.length) {
       proximo.innerHTML = '<p style="color:var(--text-dim);margin-bottom:16px;">Adicione produtos do painel 3xapp.shop para começar.</p><button class="btn btn-primary" id="btnDashAddProd2">+ Adicionar Produto</button>';
