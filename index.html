@@ -340,7 +340,7 @@
   <div class="header">
     <h1>AutoTikTok Shop</h1>
     <div style="display:flex;gap:10px;align-items:center;">
-      <span class="badge">v1.5</span>
+      <span class="badge">v1.6</span>
       <span class="badge" id="totalProdBadge">0 produtos</span>
     </div>
   </div>
@@ -580,6 +580,7 @@
         <button class="btn btn-secondary btn-sm tool-btn" data-url="https://elevenlabs.io/app/speech-synthesis" data-name="ElevenLabs - Síntese de Voz">ElevenLabs</button>
         <button class="btn btn-secondary btn-sm tool-btn" data-url="https://www.tiktok.com/tiktokstudio" data-name="TikTok Studio">TikTok Studio</button>
       </div>
+      <div id="toolFrameWrap">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
         <span id="toolTitle" style="font-weight:600;font-size:14px;">Painel 3xapp.shop</span>
         <div style="display:flex;gap:8px;">
@@ -588,7 +589,41 @@
         </div>
       </div>
       <iframe id="toolFrame" src="https://3xapp.shop" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:12px;background:#fff;" allow="clipboard-read; clipboard-write; microphone; camera"></iframe>
+      </div>
+      <div id="toolNotice" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;">
+        <p id="toolNoticeText" style="color:var(--text-dim);font-size:13px;margin-bottom:14px;">Este serviço não permite abrir dentro de outras páginas.</p>
+        <button class="btn btn-primary" id="btnNoticeOpen">Abrir em nova guia &#8599;</button>
+      </div>
       <p style="color:var(--warning);font-size:12px;margin-top:8px;">Dica: você precisa estar logado(a) em cada serviço dentro do navegador para o conteúdo aparecer aqui.</p>
+    </div>
+
+    <div class="card">
+    <div class="card">
+      <div class="card-title">&#127908; Gerador de Voz (ElevenLabs)</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Gere a locução do roteiro aqui mesmo, sem abrir o ElevenLabs. Precisa da <strong>API key</strong> salva nas Configurações Rápidas abaixo.</p>
+      <div class="form-group">
+        <label>Texto do roteiro</label>
+        <textarea id="ttsTexto" placeholder="Cole aqui o roteiro copiado (aba Roteiros)..." style="min-height:120px;"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ID da voz</label>
+          <input type="text" id="ttsVoz" placeholder="Ex: 21m00Tcm4TlvDq8ikWAM">
+        </div>
+        <div class="form-group">
+          <label>Modelo</label>
+          <select id="ttsModelo">
+            <option value="eleven_multilingual_v2">Multilingual v2 (pt-BR)</option>
+            <option value="eleven_turbo_v2_5">Turbo v2.5 (rápido)</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btnGerarVoz">Gerar Voz</button>
+      <div id="ttsResult" style="display:none;margin-top:14px;">
+        <audio id="ttsAudio" controls style="width:100%;"></audio>
+        <a id="ttsDownload" class="btn btn-secondary btn-sm" style="margin-top:8px;text-decoration:none;display:inline-block;" download="locucao.mp3">Baixar MP3</a>
+      </div>
+      <p id="ttsErro" style="display:none;color:var(--accent);font-size:12px;margin-top:10px;"></p>
     </div>
 
     <div class="card">
@@ -774,9 +809,57 @@
       }
       this.classList.remove('btn-secondary');
       this.classList.add('btn-primary');
-      toolFrame.src = currentToolUrl;
+      if (currentToolUrl.indexOf('3xapp') !== -1) {
+        document.getElementById('toolFrameWrap').style.display = 'block';
+        document.getElementById('toolNotice').style.display = 'none';
+        toolFrame.src = currentToolUrl;
+      } else {
+        document.getElementById('toolFrameWrap').style.display = 'none';
+        document.getElementById('toolNotice').style.display = 'block';
+        document.getElementById('toolNoticeText').textContent = this.getAttribute('data-name') + ' não permite abrir dentro de outras páginas (bloqueio de segurança do próprio site). Use o botão abaixo para abrir no navegador — ou use o Gerador de Voz aqui mesmo, no caso do ElevenLabs.';
+      }
     });
   }
+  document.getElementById('btnNoticeOpen').addEventListener('click', function() {
+    window.open(currentToolUrl, '_blank');
+  });
+
+  // ===== GERADOR DE VOZ ELEVENLABS =====
+  document.getElementById('btnGerarVoz').addEventListener('click', function() {
+    var cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem('atk_config') || '{}'); } catch(e) {}
+    var key = cfg.elevenKey;
+    var voz = document.getElementById('ttsVoz').value.trim() || cfg.voz;
+    var texto = document.getElementById('ttsTexto').value.trim();
+    var erro = document.getElementById('ttsErro');
+    erro.style.display = 'none';
+    if (!key) { erro.textContent = 'Configure sua API key do ElevenLabs em "Configurações Rápidas" abaixo e salve.'; erro.style.display = 'block'; return; }
+    if (!voz) { erro.textContent = 'Informe o ID da voz (ou salve a voz padrão nas Configurações).'; erro.style.display = 'block'; return; }
+    if (!texto) { erro.textContent = 'Cole o texto do roteiro primeiro.'; erro.style.display = 'block'; return; }
+    var btn = this;
+    btn.textContent = 'Gerando...';
+    btn.disabled = true;
+    fetch('https://api.elevenlabs.io/v1/text-to-speech/' + encodeURIComponent(voz) + '?output_format=mp3_44100_128', {
+      method: 'POST',
+      headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: texto, model_id: document.getElementById('ttsModelo').value })
+    }).then(function(res) {
+      if (!res.ok) throw new Error('Erro ' + res.status + ' - verifique a API key e o ID da voz');
+      return res.blob();
+    }).then(function(blob) {
+      var url = URL.createObjectURL(blob);
+      document.getElementById('ttsAudio').src = url;
+      document.getElementById('ttsDownload').href = url;
+      document.getElementById('ttsResult').style.display = 'block';
+      showToast('Voz gerada! 🎙️');
+    }).catch(function(e) {
+      erro.textContent = 'Falha: ' + e.message;
+      erro.style.display = 'block';
+    }).finally(function() {
+      btn.textContent = 'Gerar Voz';
+      btn.disabled = false;
+    });
+  });
   document.getElementById('btnOpenExternal').addEventListener('click', function() {
     window.open(currentToolUrl, '_blank');
   });
@@ -791,6 +874,7 @@
       var cfg = JSON.parse(localStorage.getItem('atk_config') || '{}');
       if (cfg.elevenKey) document.getElementById('cfgElevenKey').value = cfg.elevenKey;
       if (cfg.voz) document.getElementById('cfgVoz').value = cfg.voz;
+      if (cfg.voz && document.getElementById('ttsVoz')) document.getElementById('ttsVoz').value = cfg.voz;
       if (cfg.loja) document.getElementById('cfgLoja').value = cfg.loja;
       if (cfg.horario) document.getElementById('cfgHorario').value = cfg.horario;
     } catch(e) {}
