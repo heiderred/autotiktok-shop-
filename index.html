@@ -340,7 +340,7 @@
   <div class="header">
     <h1>AutoTikTok Shop</h1>
     <div style="display:flex;gap:10px;align-items:center;">
-      <span class="badge">v1.2</span>
+      <span class="badge">v1.3</span>
       <span class="badge" id="totalProdBadge">0 produtos</span>
     </div>
   </div>
@@ -475,6 +475,7 @@
       <div class="card-title" style="justify-content:space-between;">
         <span>Gerador de Roteiros</span>
         <button class="btn btn-primary btn-sm" id="btnGerarTodos">Gerar Todos</button>
+        <button class="btn btn-secondary btn-sm" id="btnRemoverDup">Remover Duplicatas</button>
       </div>
       <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Selecione os produtos e modelos para gerar roteiros prontos para gravação.</p>
       <div id="roteiroControls">
@@ -913,6 +914,7 @@
     }
     container.innerHTML = roteiros.map(function(r, i) {
       return '<div class="script-card">' +
+        '<button class="copy-btn btn-del-script" data-id="' + r.id + '" style="right:72px;color:var(--accent);border-color:rgba(255,0,80,0.5);">X</button>' +
         '<button class="copy-btn btn-copy-script" data-idx="' + i + '">Copiar</button>' +
         '<div class="script-header">' +
           '<span class="script-title">' + escapeHtml(r.produtoNome) + '</span>' +
@@ -937,7 +939,38 @@
         copyScript(parseInt(this.getAttribute('data-idx')));
       });
     }
+    var btnsDel = container.querySelectorAll('.btn-del-script');
+    for (var i = 0; i < btnsDel.length; i++) {
+      btnsDel[i].addEventListener('click', function() {
+        removeScript(this.getAttribute('data-id'));
+      });
+    }
   }
+
+  function removeScript(id) {
+    roteiros = roteiros.filter(function(r) { return String(r.id) !== String(id); });
+    try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {}
+    renderRoteiros();
+    updateDashboard();
+    showToast('Roteiro removido', 'XX');
+  }
+
+  function removerDuplicatas() {
+    var vistos = {};
+    var antes = roteiros.length;
+    roteiros = roteiros.filter(function(r) {
+      var chave = r.produtoId + '|' + (r.templateKey || r.template);
+      if (vistos[chave]) return false;
+      vistos[chave] = true;
+      return true;
+    });
+    try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {}
+    renderRoteiros();
+    updateDashboard();
+    showToast((antes - roteiros.length) + ' duplicata(s) removida(s)!');
+  }
+
+  document.getElementById('btnRemoverDup').addEventListener('click', removerDuplicatas);
 
   function copyScript(idx) {
     var r = roteiros[idx];
