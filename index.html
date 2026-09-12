@@ -340,7 +340,7 @@
   <div class="header">
     <h1>AutoTikTok Shop</h1>
     <div style="display:flex;gap:10px;align-items:center;">
-      <span class="badge">v1.1</span>
+      <span class="badge">v1.2</span>
       <span class="badge" id="totalProdBadge">0 produtos</span>
     </div>
   </div>
@@ -863,17 +863,20 @@
     return div.innerHTML;
   }
 
-  function gerarRoteiroProd(pid) {
+  function gerarRoteiroProd(pid, silencioso) {
     var p = produtos.find(function(x) { return x.id === pid; });
     if (!p) return;
     var templates = [];
     if (document.getElementById('tProblema').checked) templates.push('problema_solucao');
     if (document.getElementById('tAntes').checked) templates.push('antes_depois');
     if (document.getElementById('tCuriosidade').checked) templates.push('curiosidade');
+    var gerados = 0;
     for (var i = 0; i < templates.length; i++) {
       var tkey = templates[i];
+      if (roteiros.some(function(x) { return x.produtoId === p.id && x.templateKey === tkey; })) continue;
       var t = TEMPLATES[tkey];
       var r = t.gerar(p);
+      gerados++;
       roteiros.push({
         id: Date.now() + Math.random(),
         produtoId: p.id,
@@ -886,14 +889,17 @@
       });
     }
     try { localStorage.setItem('atk_roteiros', JSON.stringify(roteiros)); } catch(e) {}
-    showToast(templates.length + ' roteiro(s) gerado(s) para ' + p.nome);
+    if (!silencioso) {
+      showToast(gerados + ' roteiro(s) gerado(s) para ' + p.nome + '! Veja abaixo.');
+      switchTab('roteiros');
+    }
     renderRoteiros();
     updateDashboard();
   }
 
   function gerarTodosRoteiros() {
     if (!produtos.length) { showToast('Cadastre produtos primeiro!', '!!'); return; }
-    for (var i = 0; i < produtos.length; i++) gerarRoteiroProd(produtos[i].id);
+    for (var i = 0; i < produtos.length; i++) gerarRoteiroProd(produtos[i].id, true);
     showToast('Roteiros gerados para ' + produtos.length + ' produtos!');
   }
 
